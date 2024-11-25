@@ -61,7 +61,11 @@ def process_pas_file(file_path):
     return True
 
 def process_directory(path):
-    for root, _, files in os.walk(path):
+    for root, dirs, files in os.walk(path):
+        # Ignorar o diretório .git
+        if '.git' in dirs:
+            dirs.remove('.git')  # Remove .git da lista de subdiretórios a explorar
+
         for file in files:
             if file.endswith('.pas'):
                 file_path = os.path.join(root, file)
