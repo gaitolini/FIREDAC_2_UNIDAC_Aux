@@ -50,9 +50,15 @@ def process_pas_file(file_path):
 
     # Reescrever as seções "uses" no conteúdo
     content = uses_pattern.sub('', content, count=2)  # Remove seções antigas
-    content = re.sub(r'interface', f'interface\nuses\n{interface_uses};', content, 1, flags=re.IGNORECASE)
+
+    # Substituir a seção "interface"
+    interface_replacement = f"interface\nuses\n{interface_uses};"
+    content = re.sub(r'interface', re.escape(interface_replacement), content, 1, flags=re.IGNORECASE)
+
+    # Substituir a seção "implementation"
     if implementation_uses:
-        content = re.sub(r'implementation', f'implementation\nuses\n{implementation_uses};', content, 1, flags=re.IGNORECASE)
+        implementation_replacement = f"implementation\nuses\n{implementation_uses};"
+        content = re.sub(r'implementation', re.escape(implementation_replacement), content, 1, flags=re.IGNORECASE)
 
     # Reescrever o arquivo
     with open(file_path, 'w', encoding='utf-8') as file:
@@ -70,10 +76,13 @@ def process_directory(path):
             if file.endswith('.pas'):
                 file_path = os.path.join(root, file)
                 print(f"Processando: {file_path}")
-                if process_pas_file(file_path):
-                    print(f"Arquivo atualizado: {file_path}")
-                else:
-                    print(f"Sem alterações necessárias: {file_path}")
+                try:
+                    if process_pas_file(file_path):
+                        print(f"Arquivo atualizado: {file_path}")
+                    else:
+                        print(f"Sem alterações necessárias: {file_path}")
+                except Exception as e:
+                    print(f"Erro ao processar {file_path}: {e}")
 
 # Caminho do projeto
 project_path = input("Informe o caminho do projeto: ").strip()
