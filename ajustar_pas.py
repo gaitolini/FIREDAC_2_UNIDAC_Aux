@@ -50,21 +50,28 @@ def process_pas_file(file_path):
 
     # Remover duplicidades nos módulos UNIDAC na seção interface
     interface_uses_list = list(dict.fromkeys(interface_uses.split(',')))  # Remove duplicatas preservando ordem
-    interface_uses = ', '.join(interface_uses_list).strip()
+    interface_uses = ', '.join([mod.strip() for mod in interface_uses_list]).strip()
     if interface_uses.endswith(','):
         interface_uses = interface_uses[:-1] + ';'
 
-    # Reescrever as seções "uses" no conteúdo
-    content = uses_pattern.sub('', content, count=2)  # Remove seções antigas
-
     # Substituir a seção "interface"
-    interface_replacement = f"interface\nuses\n{interface_uses};"
-    content = re.sub(r'interface', re.escape(interface_replacement), content, 1, flags=re.IGNORECASE)
+    content = re.sub(
+        r'interface\s+uses\s+.*?;', 
+        f"interface\nuses\n{interface_uses};", 
+        content, 
+        count=1, 
+        flags=re.DOTALL | re.IGNORECASE
+    )
 
-    # Substituir a seção "implementation"
+    # Substituir a seção "implementation" (se existir)
     if implementation_uses:
-        implementation_replacement = f"implementation\nuses\n{implementation_uses};"
-        content = re.sub(r'implementation', re.escape(implementation_replacement), content, 1, flags=re.IGNORECASE)
+        content = re.sub(
+            r'implementation\s+uses\s+.*?;',
+            f"implementation\nuses\n{implementation_uses};",
+            content,
+            count=1,
+            flags=re.DOTALL | re.IGNORECASE
+        )
 
     # Reescrever o arquivo
     with open(file_path, 'w', encoding='utf-8') as file:
