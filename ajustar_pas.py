@@ -39,7 +39,7 @@ def process_pas_file(file_path):
     # Verificar se há necessidade de adicionar UNIDAC
     if any(module in content for module in UNIDAC_MODULES):
         for module in UNIDAC_MODULES:
-            if module not in interface_uses:
+            if module not in interface_uses:  # Adiciona somente se ainda não existir
                 interface_uses += f", {module}"
         interface_uses = re.sub(r',\s*$', ';', interface_uses.strip())  # Garantir ";" no final
 
@@ -47,6 +47,12 @@ def process_pas_file(file_path):
     for module in FIREDAC_MODULES:
         interface_uses = re.sub(rf'\b{module}\b,?\s*', '', interface_uses)
         implementation_uses = re.sub(rf'\b{module}\b,?\s*', '', implementation_uses)
+
+    # Remover duplicidades nos módulos UNIDAC na seção interface
+    interface_uses_list = list(dict.fromkeys(interface_uses.split(',')))  # Remove duplicatas preservando ordem
+    interface_uses = ', '.join(interface_uses_list).strip()
+    if interface_uses.endswith(','):
+        interface_uses = interface_uses[:-1] + ';'
 
     # Reescrever as seções "uses" no conteúdo
     content = uses_pattern.sub('', content, count=2)  # Remove seções antigas
