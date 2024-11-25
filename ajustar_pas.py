@@ -36,30 +36,42 @@ def process_pas_file(file_path):
     interface_uses = uses_sections[0]
     implementation_uses = uses_sections[1] if len(uses_sections) > 1 else ""
 
-    # Verificar se há necessidade de adicionar UNIDAC
+    # Função auxiliar para normalizar e deduplicar módulos (case-insensitive)
+    def normalize_uses_section(uses_section):
+        modules = [module.strip() for module in uses_section.split(',')]
+        # Deduplicar ignorando maiúsculas/minúsculas
+        unique_modules = {}
+        for module in modules:
+            key = module.lower()  # Usar o nome em minúsculas como chave
+            if key not in unique_modules:
+                unique_modules[key] = module  # Manter o formato original
+        return ', '.join(unique_modules.values())
+
+    # Adicionar UNIDAC se necessário
     if any(module in content for module in UNIDAC_MODULES):
         for module in UNIDAC_MODULES:
-            if module not in interface_uses:  # Adiciona somente se ainda não existir
+            if module.lower() not in interface_uses.lower():  # Checar case-insensitive
                 interface_uses += f", {module}"
-        interface_uses = re.sub(r',\s*$', ';', interface_uses.strip())  # Garantir ";" no final
 
     # Remover módulos FIREDAC
     for module in FIREDAC_MODULES:
-        interface_uses = re.sub(rf'\b{module}\b,?\s*', '', interface_uses)
-        implementation_uses = re.sub(rf'\b{module}\b,?\s*', '', implementation_uses)
+        interface_uses = re.sub(rf'\b{module}\b,?\s*', '', interface_uses, flags=re.IGNORECASE)
+        implementation_uses = re.sub(rf'\b{module}\b,?\s*', '', implementation_uses, flags=re.IGNORECASE)
 
-    # Remover duplicidades nos módulos UNIDAC na seção interface
-    interface_uses_list = list(dict.fromkeys(interface_uses.split(',')))  # Remove duplicatas preservando ordem
-    interface_uses = ', '.join([mod.strip() for mod in interface_uses_list]).strip()
-    if interface_uses.endswith(','):
-        interface_uses = interface_uses[:-1] + ';'
+    # Normalizar e deduplicar seções
+    interface_uses = normalize_uses_section(interface_uses)
+    implementation_uses = normalize_uses_section(implementation_uses)
+
+    # Garantir ";" no final de interface_uses
+    if not interface_uses.endswith(';'):
+        interface_uses += ';'
 
     # Substituir a seção "interface"
     content = re.sub(
-        r'interface\s+uses\s+.*?;', 
-        f"interface\nuses\n{interface_uses};", 
-        content, 
-        count=1, 
+        r'interface\s+uses\s+.*?;',
+        f"interface\nuses\n{interface_uses};",
+        content,
+        count=1,
         flags=re.DOTALL | re.IGNORECASE
     )
 
